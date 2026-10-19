@@ -1,0 +1,14 @@
+{
+  "include": [
+    "src",
+    "alembic"
+  ],
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": [
+        "src"
+      ]
+    }
+  ]
+}

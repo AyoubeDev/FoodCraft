@@ -1,0 +1,14 @@
+[project]
+name = "foodcraft"
+version = "0.1.0"
+description = "A recipe sharing application with users, favorites, ratings, and ingredients"
+authors = [{ name = "Federico Cardara" }]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+	"psycopg2-binary>=2.9",
+]
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
