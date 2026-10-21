@@ -35,6 +35,10 @@ Si usas otro terminal:
 PYTHONPATH=src python -m foodcraft.app_ui
 ```
 
+## API (en construccion)
+
+La base de la API HTTP/REST (URLs, Requests, Responses) esta documentada en [src/api/README.md](src/api/README.md).
+
 ## Menus disponibles
 
 ### Main menu

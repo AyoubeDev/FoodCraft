@@ -2,8 +2,8 @@ from rich.console import Console
 from rich.prompt import Prompt
 from rich.table import Table
 
-from domain import RecipeRepository, Session, UserRepository
-from domain.models import Recipe
+from foodcraft import api_client
+from foodcraft.users_views import show_error
 
 console = Console()
 
@@ -34,111 +34,73 @@ def show_recipes_menu() -> None:
         get_recipe()
     elif option == "5":
         list_recipes()
-    elif option == "0":
-        return
 
 
 def add_recipe() -> None:
     console.print("[bold cyan]Add new recipe[/bold cyan]")
 
-    with Session() as session:
-        user_repo = UserRepository(session)
-        recipe_repo = RecipeRepository(session)
+    data = {
+        "user_id": Prompt.ask("Author user ID"),
+        "title": Prompt.ask("Title"),
+        "description": Prompt.ask("Description", default=""),
+    }
 
-        author_id = int(Prompt.ask("Author user ID"))
-        author = user_repo.get(author_id)
-        if author is None:
-            console.print("[red]Author not found[/red]")
-            return
-
-        recipe = Recipe(
-            author=author,
-            title=Prompt.ask("Title"),
-            description=Prompt.ask("Description", default=""),
-        )
-
-        try:
-            recipe_repo.save(recipe)
-            session.commit()
-            console.print("[green]Recipe added successfully![/green]")
-        except Exception as error:
-            console.print(f"[red]Error: {error}[/red]")
+    _, error = api_client.create("recipes", data)
+    if not show_error(error):
+        console.print("[green]Recipe added successfully![/green]")
 
 
 def update_recipe() -> None:
     recipe_id = Prompt.ask("ID of recipe to update")
 
-    with Session() as session:
-        user_repo = UserRepository(session)
-        recipe_repo = RecipeRepository(session)
-        recipe = recipe_repo.get(int(recipe_id))
+    recipe, error = api_client.get("recipes", recipe_id)
+    if show_error(error):
+        return
 
-        if recipe is None:
-            console.print("[red]Recipe not found[/red]")
-            return
+    console.print("[yellow]Leave fields empty to keep current value[/yellow]")
 
-        console.print("[yellow]Leave fields empty to keep current value[/yellow]")
+    data = {
+        "user_id": Prompt.ask("Author user ID", default=str(recipe["user_id"])),
+        "title": Prompt.ask("Title", default=recipe["title"]),
+        "description": Prompt.ask("Description", default=recipe["description"] or ""),
+    }
 
-        current_author = recipe.author.user_id if recipe.author else recipe.user_id
-        author_id = int(Prompt.ask("Author user ID", default=str(current_author)))
-        author = user_repo.get(author_id)
-        if author is None:
-            console.print("[red]Author not found[/red]")
-            return
-
-        recipe.author = author
-        recipe.title = Prompt.ask("Title", default=recipe.title)
-        recipe.description = Prompt.ask("Description", default=recipe.description or "")
-
-        recipe_repo.update(recipe)
-
-    console.print("[green]Recipe updated successfully[/green]")
+    _, error = api_client.update("recipes", recipe_id, data)
+    if not show_error(error):
+        console.print("[green]Recipe updated successfully[/green]")
 
 
 def delete_recipe() -> None:
     recipe_id = Prompt.ask("ID to delete")
 
-    with Session() as session:
-        repo = RecipeRepository(session)
-        recipe = repo.get(int(recipe_id))
-
-        if recipe is None:
-            console.print("[red]Recipe not found[/red]")
-            return
-
-        repo.delete(int(recipe_id))
-        session.commit()
-
-    console.print("[green]Recipe deleted[/green]")
+    _, error = api_client.delete("recipes", recipe_id)
+    if not show_error(error):
+        console.print("[green]Recipe deleted[/green]")
 
 
 def get_recipe() -> None:
     recipe_id = Prompt.ask("ID")
 
-    with Session() as session:
-        repo = RecipeRepository(session)
-        recipe = repo.get(int(recipe_id))
-
-    if recipe is None:
-        console.print("[red]Recipe not found[/red]")
+    recipe, error = api_client.get("recipes", recipe_id)
+    if show_error(error):
         return
 
     table = Table(title="Recipe")
     table.add_column("Field")
     table.add_column("Value")
 
-    table.add_row("ID", str(recipe.recipe_id))
-    table.add_row("Title", recipe.title)
-    table.add_row("Author ID", str(recipe.user_id))
-    table.add_row("Description", recipe.description or "")
+    table.add_row("ID", str(recipe["recipe_id"]))
+    table.add_row("Title", recipe["title"])
+    table.add_row("Author ID", str(recipe["user_id"]))
+    table.add_row("Description", recipe["description"] or "")
 
     console.print(table)
 
 
 def list_recipes() -> None:
-    with Session() as session:
-        repo = RecipeRepository(session)
-        recipes = repo.get_all()
+    recipes, error = api_client.get_all("recipes")
+    if show_error(error):
+        return
 
     table = Table(title="All recipes")
     table.add_column("ID")
@@ -146,6 +108,6 @@ def list_recipes() -> None:
     table.add_column("Author ID")
 
     for recipe in recipes:
-        table.add_row(str(recipe.recipe_id), recipe.title, str(recipe.user_id))
+        table.add_row(str(recipe["recipe_id"]), recipe["title"], str(recipe["user_id"]))
 
     console.print(table)

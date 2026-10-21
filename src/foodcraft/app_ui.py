@@ -1,21 +1,13 @@
 from pathlib import Path
 
-from sqlalchemy import select
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.table import Table
 
+from foodcraft import api_client
 from foodcraft.recipes_views import show_recipes_menu as show_recipes_actions
+from foodcraft.users_views import show_error
 from foodcraft.users_views import show_users_menu as show_users_actions
-
-from domain import (
-    CategoryRepository,
-    IngredientRepository,
-    RecipeRepository,
-    Session,
-    UserRepository,
-)
-from domain.models import Rating
 
 console = Console()
 
@@ -46,85 +38,69 @@ def _print_table(title: str, columns: list[str], rows: list[list[str]]) -> None:
 
 
 def show_users_menu():
-    with Session() as session:
-        users = UserRepository(session).get_all()
-        rows = [
-            [
-                str(user.user_id),
-                user.username,
-                user.email,
-                str(len(user.recipes)),
-                str(len(user.ratings)),
-            ]
-            for user in users
-        ]
+    users, error = api_client.get_all("users")
+    if show_error(error):
+        return
 
-    _print_table(
-        "Users",
-        ["ID", "Username", "Email", "Recipes", "Ratings"],
-        rows,
-    )
+    rows = [[str(u["user_id"]), u["username"], u["email"]] for u in users]
+    _print_table("Users", ["ID", "Username", "Email"], rows)
     show_users_actions()
 
 
 def show_recipes_menu():
-    with Session() as session:
-        recipes = RecipeRepository(session).get_all()
-        rows = [
-            [
-                str(recipe.recipe_id),
-                recipe.title,
-                recipe.author.username if recipe.author else "-",
-                str(recipe.prep_time or "-"),
-                str(recipe.cook_time or "-"),
-                str(recipe.servings or "-"),
-            ]
-            for recipe in recipes
-        ]
+    recipes, error = api_client.get_all("recipes")
+    if show_error(error):
+        return
 
-    _print_table(
-        "Recipes",
-        ["ID", "Title", "Author", "Prep", "Cook", "Servings"],
-        rows,
-    )
+    rows = [
+        [
+            str(r["recipe_id"]),
+            r["title"],
+            str(r["user_id"]),
+            str(r["prep_time"] or "-"),
+            str(r["cook_time"] or "-"),
+            str(r["servings"] or "-"),
+        ]
+        for r in recipes
+    ]
+    _print_table("Recipes", ["ID", "Title", "Author ID", "Prep", "Cook", "Servings"], rows)
     show_recipes_actions()
 
 
 def show_categories_menu():
-    with Session() as session:
-        categories = CategoryRepository(session).get_all()
-        rows = [[str(category.category_id), category.name] for category in categories]
+    categories, error = api_client.get_all("categories")
+    if show_error(error):
+        return
 
+    rows = [[str(c["category_id"]), c["name"]] for c in categories]
     _print_table("Categories", ["ID", "Name"], rows)
 
 
 def show_ingredients_menu():
-    with Session() as session:
-        ingredients = IngredientRepository(session).get_all()
-        rows = [[str(ingredient.ingredient_id), ingredient.name] for ingredient in ingredients]
+    ingredients, error = api_client.get_all("ingredients")
+    if show_error(error):
+        return
 
+    rows = [[str(i["ingredient_id"]), i["name"]] for i in ingredients]
     _print_table("Ingredients", ["ID", "Name"], rows)
 
 
 def show_ratings_menu():
-    with Session() as session:
-        ratings = session.scalars(select(Rating)).all()
-        rows = [
-            [
-                str(rating.rating_id),
-                rating.user.username if rating.user else "-",
-                rating.recipe.title if rating.recipe else "-",
-                str(rating.stars),
-                rating.comment or "-",
-            ]
-            for rating in ratings
-        ]
+    ratings, error = api_client.get_all("ratings")
+    if show_error(error):
+        return
 
-    _print_table(
-        "Ratings",
-        ["ID", "User", "Recipe", "Stars", "Comment"],
-        rows,
-    )
+    rows = [
+        [
+            str(r["rating_id"]),
+            str(r["user_id"]),
+            str(r["recipe_id"]),
+            str(r["stars"]),
+            r["comment"] or "-",
+        ]
+        for r in ratings
+    ]
+    _print_table("Ratings", ["ID", "User ID", "Recipe ID", "Stars", "Comment"], rows)
 
 
 def main_menu():
