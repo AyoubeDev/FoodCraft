@@ -12,8 +12,8 @@ La UI permite:
 ### Como se organiza
 
 - Menu principal: `src/foodcraft/app_ui.py`
-- Acciones de usuarios: `src/foodcraft/users_views.py`
-- Acciones de recetas: `src/foodcraft/recipes_views.py`
+- Menús y acciones de usuarios y recetas: `src/foodcraft/app_ui.py`
+- Comunicación con la API: `src/foodcraft/api_client.py`
 
 Flujo general:
 1. Se muestra el logo y el menu principal.

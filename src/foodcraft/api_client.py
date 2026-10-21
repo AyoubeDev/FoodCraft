@@ -14,7 +14,7 @@ def call(method, path, data=None):
 
     body = response.json() if response.text else None
     if response.status_code >= 400:
-        return None, body["error"]
+        return None, body["error"] #type: ignore
     return body, None
 
 
