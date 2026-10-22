@@ -165,7 +165,7 @@ Sin validaciones a proposito: se asume que el client envia HTTP correcto.
 Es un *listener*: se queda esperando clientes y, por cada uno, repite siempre lo mismo. No toca la BD.
 
 1. Abre un socket de escucha en `0.0.0.0:8000` (`0.0.0.0` permite conexiones desde otros equipos).
-2. `accept()` espera a un cliente; cada cliente llega con su **propio socket nuevo** y se atiende en un **hilo**.
+2. `accept()` espera a un cliente; cada cliente llega con su **propio socket nuevo** y se atiende **uno a la vez** (sin hilos por ahora: hasta que `handle` no termina, el siguiente espera).
 3. `handle(client)`: `read_request` -> `find_route` -> `Request.from_json` -> `send_order` -> `build_response` -> `sendall` -> `close`.
 4. `send_order(name, params, query, body)` abre un socket nuevo contra el backend, envia la orden (una linea JSON) y lee la respuesta (otra linea JSON).
 
@@ -306,6 +306,7 @@ src/foodcraft/            client: api_client.py + vistas (no importa domain)
 3. **Datos extra de los listados**: la CLI muestra ids en vez de nombres (autor, usuario, receta) y sin recuentos. Mejorar en el backend o con mas llamadas.
 4. **Cliente**: solo Users y Recipes tienen menu de acciones completo (como antes); Categories, Ingredients y Ratings siguen solo en listado aunque la API ya soporta su CRUD.
 5. **Seguridad**: `password_hash` lo envia el client (y el update de usuario no lo cambia); no hay autenticacion; el canal API -> backend no esta cifrado.
-6. **Limitaciones de `http_message`** y del protocolo API -> backend: si el otro lado se corta a mitad de mensaje, el hilo se queda esperando.
+6. **Limitaciones de `http_message`** y del protocolo API -> backend: si el otro lado se corta a mitad de mensaje, el servidor se queda esperando y, al atender un cliente a la vez, bloquea a todos los demas.
+7. **Hilos**: API y backend atienden un cliente a la vez. Pendiente anadir `threading` para atender varios a la vez.
 7. **Paginacion** de listados.
 8. **README raiz**: sigue describiendo la CLI antigua (acceso directo a BD).

@@ -1,7 +1,6 @@
 import json
 import os
 import socket
-import threading
 
 from backend.dispatcher import dispatch
 from backend.responses import ResponseBuilder
@@ -37,7 +36,7 @@ def run():
 
     while True:
         api, _address = server.accept()
-        threading.Thread(target=handle, args=(api,)).start()
+        handle(api)  # una orden a la vez; sin hilos por ahora
 
 
 if __name__ == "__main__":
