@@ -36,7 +36,7 @@ def run():
 
     while True:
         api, _address = server.accept()
-        handle(api)  # una orden a la vez; sin hilos por ahora
+        handle(api)
 
 
 if __name__ == "__main__":

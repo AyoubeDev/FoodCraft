@@ -6,7 +6,7 @@ data = socket.recv(1024) #recive el mensaje de bienvenida del servidor
 print(f"> {data}")
 
 
-continue_calc = y
+continue_calc = "y"
 while continue_calc == "y":
     number_1 = int(input("type the first number"))
     operation = int(input("type the operation (+, -, *, /)"))
