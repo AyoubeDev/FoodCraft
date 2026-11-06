@@ -11,10 +11,20 @@ def call(method, path, data=None):
         response = requests.request(method, API_URL + path, json=data, timeout=10)
     except requests.RequestException:
         return None, "API not available"
+    
+    # request(method). method es el metodo HTTP, por ejemplo "GET", POST, PUT, DELETE 
+    # API_URL + path es la direcció de la API mes la ruta, per ejemplo, http://127:0.0.1:8000/users
+    # json=data es que envia datos en cuerpo JSON, de su formato (serializacion)
+    # timeout = 10 espera 10 segundos para la respuesta
+    # En caso de que no se consiga comunicar con la API, ya sea en el tiempo establecido o por que este apagada, 
+    # llama el except, y devuelve el (None, "Api not available")
 
-    body = response.json() if response.text else None
+    if response.text:
+        body = response.json()
+    else:
+        body = None
     if response.status_code >= 400:
-        return None, body["error"] #type: ignore
+        return None, body["error"]
     return body, None
 
 
@@ -36,3 +46,5 @@ def update(table, item_id, data):
 
 def delete(table, item_id):
     return call("DELETE", f"/{table}/{item_id}")
+
+#cada funcion es una orden diferente al servidor, 
