@@ -1,4 +1,5 @@
 import socket
+import threading
 
 from api import Request, Response, find_route
 from api.backend_client import send_order
@@ -39,7 +40,7 @@ def run():
 
     while True:
         client, _address = server.accept()
-        handle(client)  # un cliente a la vez; sin hilos por ahora
+        threading.Thread(target=handle, args=(client,), daemon=True).start()
 
 
 if __name__ == "__main__":
