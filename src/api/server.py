@@ -1,5 +1,5 @@
 import socket
-from threading import BoundedSemaphore, Thread
+import threading
 
 from api import Request, Response, find_route
 from api.backend_client import send_order
@@ -49,8 +49,7 @@ def run():
     slots = BoundedSemaphore(MAX_WORKERS)
     while True:
         client, _address = server.accept()
-        slots.acquire()
-        Thread(target=handle_with_slot, args=(client, slots), daemon=True).start()
+        threading.Thread(target=handle, args=(client,), daemon=True).start()
 
 
 if __name__ == "__main__":

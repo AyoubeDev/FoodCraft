@@ -1,7 +1,7 @@
 import json
 import os
 import socket
-from threading import BoundedSemaphore, Thread
+import threading
 
 from backend.dispatcher import dispatch
 from backend.responses import ResponseBuilder
@@ -43,11 +43,9 @@ def run():
     server.listen()
     print(f"Backend escuchando en {HOST}:{PORT}")
 
-    slots = BoundedSemaphore(MAX_WORKERS)
     while True:
         api, _address = server.accept()
-        slots.acquire()
-        Thread(target=handle_with_slot, args=(api, slots), daemon=True).start()
+        threading.Thread(target=handle, args=(api,), daemon=True).start()
 
 
 if __name__ == "__main__":
