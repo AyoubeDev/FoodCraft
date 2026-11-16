@@ -1,6 +1,7 @@
 import json
 import os
 import socket
+from threading import BoundedSemaphore, Thread
 
 from backend.dispatcher import dispatch
 from backend.responses import ResponseBuilder
@@ -8,6 +9,7 @@ from backend.responses import ResponseBuilder
 # Solo acepta conexiones de la propia maquina. Para que la API este en otro equipo: BACKEND_HOST=0.0.0.0
 HOST = os.getenv("BACKEND_HOST", "127.0.0.1")
 PORT = int(os.getenv("BACKEND_PORT", "9000"))
+MAX_WORKERS = 20
 
 
 def handle(api):
@@ -27,6 +29,13 @@ def handle(api):
     api.close()
 
 
+def handle_with_slot(api, slots):
+    try:
+        handle(api)
+    finally:
+        slots.release()
+
+
 def run():
     server = socket.socket()
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -34,9 +43,11 @@ def run():
     server.listen()
     print(f"Backend escuchando en {HOST}:{PORT}")
 
+    slots = BoundedSemaphore(MAX_WORKERS)
     while True:
         api, _address = server.accept()
-        handle(api)
+        slots.acquire()
+        Thread(target=handle_with_slot, args=(api, slots), daemon=True).start()
 
 
 if __name__ == "__main__":

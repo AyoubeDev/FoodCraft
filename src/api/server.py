@@ -1,4 +1,5 @@
 import socket
+from threading import BoundedSemaphore, Thread
 
 from api import Request, Response, find_route
 from api.backend_client import send_order
@@ -6,6 +7,7 @@ from api.http_message import build_response, read_request
 
 HOST = "0.0.0.0"  # 0.0.0.0 = acepta conexiones de otros equipos de la red
 PORT = 8000
+MAX_WORKERS = 20
 
 
 def handle(client):
@@ -30,6 +32,13 @@ def handle(client):
     client.close()
 
 
+def handle_with_slot(client, slots):
+    try:
+        handle(client)
+    finally:
+        slots.release()
+
+
 def run():
     server = socket.socket()
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -37,9 +46,11 @@ def run():
     server.listen()
     print(f"API escuchando en {HOST}:{PORT}")
 
+    slots = BoundedSemaphore(MAX_WORKERS)
     while True:
         client, _address = server.accept()
-        handle(client)  # un cliente a la vez; sin hilos por ahora
+        slots.acquire()
+        Thread(target=handle_with_slot, args=(client, slots), daemon=True).start()
 
 
 if __name__ == "__main__":
