@@ -4,6 +4,7 @@ import threading
 from api import Request, Response, find_route
 from api.backend_client import send_order
 from api.http_message import build_response, read_request
+from security.tls import server_context, wrap_connection
 
 HOST = "0.0.0.0"  # 0.0.0.0 = acepta conexiones de otros equipos de la red
 PORT = 8000
@@ -32,24 +33,24 @@ def handle(client):
     client.close()
 
 
-def handle_with_slot(client, slots):
-    try:
+def handle_secure(raw_client, context):
+    """Handshake TLS dentro del hilo (para no frenar el listener) y despues atiende la peticion."""
+    client = wrap_connection(context, raw_client)
+    if client is not None:
         handle(client)
-    finally:
-        slots.release()
 
 
 def run():
+    context = server_context()
     server = socket.socket()
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((HOST, PORT))
     server.listen()
-    print(f"API escuchando en {HOST}:{PORT}")
+    print(f"API escuchando (TLS 1.3) en {HOST}:{PORT}")
 
-    slots = BoundedSemaphore(MAX_WORKERS)
     while True:
         client, _address = server.accept()
-        threading.Thread(target=handle, args=(client,), daemon=True).start()
+        threading.Thread(target=handle_secure, args=(client, context), daemon=True).start()
 
 
 if __name__ == "__main__":

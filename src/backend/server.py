@@ -5,6 +5,7 @@ import threading
 
 from backend.dispatcher import dispatch
 from backend.responses import ResponseBuilder
+from security.tls import server_context, wrap_connection
 
 # Solo acepta conexiones de la propia maquina. Para que la API este en otro equipo: BACKEND_HOST=0.0.0.0
 HOST = os.getenv("BACKEND_HOST", "127.0.0.1")
@@ -29,23 +30,24 @@ def handle(api):
     api.close()
 
 
-def handle_with_slot(api, slots):
-    try:
+def handle_secure(raw_api, context):
+    """Handshake TLS dentro del hilo (para no frenar el listener) y despues atiende la orden."""
+    api = wrap_connection(context, raw_api)
+    if api is not None:
         handle(api)
-    finally:
-        slots.release()
 
 
 def run():
+    context = server_context()
     server = socket.socket()
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((HOST, PORT))
     server.listen()
-    print(f"Backend escuchando en {HOST}:{PORT}")
+    print(f"Backend escuchando (TLS 1.3) en {HOST}:{PORT}")
 
     while True:
         api, _address = server.accept()
-        threading.Thread(target=handle, args=(api,), daemon=True).start()
+        threading.Thread(target=handle_secure, args=(api, context), daemon=True).start()
 
 
 if __name__ == "__main__":

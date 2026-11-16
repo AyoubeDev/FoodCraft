@@ -1,14 +1,29 @@
 import os
 
 import requests
+from requests.adapters import HTTPAdapter
 
-API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
+from security.tls import client_context
+
+API_URL = os.getenv("API_URL", "https://127.0.0.1:8000")
+
+
+class TlsAdapter(HTTPAdapter):
+    """Hace que requests use TLS 1.3 con el certificado del cliente (mTLS)."""
+
+    def init_poolmanager(self, *args, **kwargs):
+        kwargs["ssl_context"] = client_context()
+        super().init_poolmanager(*args, **kwargs)
+
+
+session = requests.Session()
+session.mount("https://", TlsAdapter())
 
 
 def call(method, path, data=None):
     """Llama a la API. Devuelve (datos, error). Si todo va bien, error es None."""
     try:
-        response = requests.request(method, API_URL + path, json=data, timeout=10)
+        response = session.request(method, API_URL + path, json=data, timeout=10)
     except requests.RequestException:
         return None, "API not available"
     

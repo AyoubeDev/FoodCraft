@@ -39,6 +39,23 @@ PYTHONPATH=src python -m foodcraft.app_ui
 
 La base de la API HTTP/REST (URLs, Requests, Responses) esta documentada en [src/api/README.md](src/api/README.md).
 
+## Seguridad: TLS 1.3 con autenticacion mutua
+
+Los dos tramos (UI -> API y API -> backend) van cifrados con TLS 1.3 usando solo el modulo `ssl`
+([src/security/tls.py](src/security/tls.py)). Cada extremo presenta su certificado (mTLS): el
+cifrado asimetrico negocia la clave de sesion y los datos se cifran con cifrado simetrico (AEAD).
+
+Antes del primer arranque, genera la CA y los certificados (las claves `*.key` no se versionan):
+
+```powershell
+pip install cryptography            # solo para generar los certificados
+python scripts/generate_certificates.py
+```
+
+Si quieres las claves cifradas, define `TLS_KEY_PASSWORD` antes de generarlas y tambien al arrancar
+cada servicio. La UI usa `https://127.0.0.1:8000` por defecto (`API_URL` para cambiarlo); los
+certificados son validos para `localhost` y `127.0.0.1`.
+
 ## Menus disponibles
 
 ### Main menu
