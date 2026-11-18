@@ -9,7 +9,7 @@ API_URL = os.getenv("API_URL", "https://127.0.0.1:8000")
 
 
 class TlsAdapter(HTTPAdapter):
-    """Hace que requests use TLS 1.3 con el certificado del cliente (mTLS)."""
+    """Make requests use TLS 1.3 and verify the API server certificate."""
 
     def init_poolmanager(self, *args, **kwargs):
         kwargs["ssl_context"] = client_context()

@@ -29,6 +29,12 @@ Backend -> API: {"status": 201, "body": {"user_id": 1, "username": "ana"}}
 
 La API valida lo minimo (ruta existente, JSON correcto, solo campos de la tabla). El backend valida con el `_validate` de los repositorios; su `ValueError` sale como 400.
 
+### Seguridad de las conexiones
+
+Los dos tramos usan TLS 1.3: cliente -> API y API -> backend. Cada cliente valida el certificado del servidor con `certs/ca-cert.pem`. TLS cifra y valida el servidor, pero no autentica al cliente; no se exige un certificado a cada cliente (no hay mTLS). El modulo `security/tls.py` contiene los contextos TLS. Los sockets siguen en `api/` y `backend/`, por eso no hace falta otra carpeta `network`.
+
+Los certificados locales se generan con `python scripts/generate_certificates.py` (requiere `cryptography`, solo para generarlos). Python usa los archivos PEM directamente; no hace falta un `.p12`. Los certificados generados sirven para `localhost` y `127.0.0.1`; para otros equipos, el certificado debe incluir su nombre o IP.
+
 ### Diagrama de flujo (una peticion, ida y vuelta)
 
 ```mermaid

@@ -39,22 +39,28 @@ PYTHONPATH=src python -m foodcraft.app_ui
 
 La base de la API HTTP/REST (URLs, Requests, Responses) esta documentada en [src/api/README.md](src/api/README.md).
 
-## Seguridad: TLS 1.3 con autenticacion mutua
+## Seguridad: TLS 1.3
 
-Los dos tramos (UI -> API y API -> backend) van cifrados con TLS 1.3 usando solo el modulo `ssl`
-([src/security/tls.py](src/security/tls.py)). Cada extremo presenta su certificado (mTLS): el
-cifrado asimetrico negocia la clave de sesion y los datos se cifran con cifrado simetrico (AEAD).
+Los dos tramos (UI -> API y API -> backend) usan TLS 1.3. Cada cliente comprueba el certificado del
+servidor mediante una CA local. TLS cifra la conexion y valida el servidor, pero no identifica al
+cliente: no se piden certificados de cliente (sin mTLS). La configuracion esta en
+[src/security/tls.py](src/security/tls.py). No hace falta una carpeta `network`: cada servidor
+mantiene su socket donde ya esta implementado.
 
-Antes del primer arranque, genera la CA y los certificados (las claves `*.key` no se versionan):
+Genera una CA local y un certificado por servidor:
 
 ```powershell
-pip install cryptography            # solo para generar los certificados
+pip install cryptography            # solo hace falta al generar los certificados
 python scripts/generate_certificates.py
 ```
 
-Si quieres las claves cifradas, define `TLS_KEY_PASSWORD` antes de generarlas y tambien al arrancar
-cada servicio. La UI usa `https://127.0.0.1:8000` por defecto (`API_URL` para cambiarlo); los
-certificados son validos para `localhost` y `127.0.0.1`.
+Los archivos se guardan en `certs/` y no se deben subir a Git. La UI usa
+`https://127.0.0.1:8000` por defecto (`API_URL` para cambiarlo); los certificados generados son
+validos para `localhost` y `127.0.0.1`. Si se despliega en otros equipos, hay que generar
+certificados que incluyan sus nombres o IPs. Python utiliza PEM directamente, asi que no hace falta
+un archivo `.p12`.
+
+Diagrama draw.io detallado (certificados, handshakes TLS y ejemplo de peticion/respuesta): [src/api/flujo-tls.drawio](src/api/flujo-tls.drawio).
 
 ## Menus disponibles
 

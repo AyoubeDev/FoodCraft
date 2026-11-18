@@ -41,7 +41,7 @@ def handle_secure(raw_client, context):
 
 
 def run():
-    context = server_context()
+    context = server_context("api")
     server = socket.socket()
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((HOST, PORT))
